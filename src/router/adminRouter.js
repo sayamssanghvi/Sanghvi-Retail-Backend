@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/admin/registration', async (req, res) => {
 
     try {
-        if (req.body.special != '85391SMC')
+        if (req.body.special != process.env.ADMIN_REG_KEY)
             throw new Error('You are not authenticated to Register a user.Bug Off');
         var admin = new Admin({
             phonenumber: req.body.phonenumber,
