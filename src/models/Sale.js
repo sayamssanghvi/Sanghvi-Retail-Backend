@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
-var Schema = mongoose.Schema({
+let Schema = new mongoose.Schema({
+    name: {
+        type: String,
+        required:true
+    },
     amount: {
         type: Number,
         required: true,
@@ -9,13 +13,20 @@ var Schema = mongoose.Schema({
     user: {
         type: String,
         ref:'Customer'
+    },
+    admin: {
+        type: String,
+        ref:'Admin'
+    },
+    saleCode: {
+        type: String,
+        uppercase: true,
+        unique:true
     }
 }, {
     timestamps:true
 });
 
-var Sale = new mongoose.model('Sale', Schema);
+var Sale = mongoose.model('Sale', Schema);
 
-module.exports = {
-    Sale
-}
+module.exports = Sale;

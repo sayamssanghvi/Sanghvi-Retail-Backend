@@ -1,10 +1,11 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
 const { Admin } = require('../models/Admin');
-const { Sale } = require('../models/Sale');
+const Sale  = require('../models/Sale');
+const Messages = require('../constants/messages');
 const Auth = require('../middleware/Auth');
 const router = express.Router();
 
+//admin registeration
 router.post('/admin/registration', async (req, res) => {
 
     try {
@@ -22,20 +23,42 @@ router.post('/admin/registration', async (req, res) => {
     }
 });
 
+//Admin Login
 router.post('/admin/login',async (req, res) => {
    
     try {
         if (req.body.password == null || req.body.phonenumber == null)
-            throw new Error("Please enter both password and phonenumber");
+            return res.status(404).send({status:-1,error:Messages.ENTER_PASSWORD_AND_PHNO});
         let admin = await Admin.findByCredentials(req.body.phonenumber, req.body.password.toString());
         let token = await admin.generateAuthToken();
         res.send({ status: 1 ,token});
     } catch (e) {
         console.log(e);
-        res.status(500).send({ status: -99, error: e.message });
+        if (e.message == "This phonenumber does not exists")
+            res.status(401).send({ status: 401, error: e.message });
+        else if (e.message == "Invalid password")
+            res.status(403).send({ status: 403, error: e.message });
+        else 
+            res.status(500).send({ status: -99, error: e.message });
     }
 });
 
+//Update Admin Details
+router.put("/admin/update/details/:number", Auth, async (req, res) => {
+  try {
+      let cust = await Admin.findOne({ phonenumber: req.params.number });
+      cust.password = req.body.password;
+      await cust.save();
+      
+      res.send({ status: 1 });
+      
+  } catch (e) {
+    console.log(e);
+    res.status(500).send({ status: -99, error: e.message });
+  }
+});
+
+//Get total Sale count
 router.get('/admin/sale/count',Auth,async (req, res) => {
     
     try {
@@ -47,6 +70,7 @@ router.get('/admin/sale/count',Auth,async (req, res) => {
     }
 });
 
+//View all Sales
 router.get('/admin/view/sale',Auth,async (req, res) => {
    
     try {
@@ -61,6 +85,8 @@ router.get('/admin/view/sale',Auth,async (req, res) => {
         res.status(500).send({ status: -99, error: e.message });
     }
 });
+
+//Try to implement Logout feature and in this feature remove the last used authToken
 
 
 module.exports = router;

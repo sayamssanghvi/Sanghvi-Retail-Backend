@@ -5,7 +5,9 @@ var Auth = async (req, res, next) => {
 
     try {
         var token = req.header('Authorization').replace('Bearer ', '');
-        var decoder = jwt.verify(token, '85391SMC');
+        var decoder = jwt.verify(token, '85391SMC', {
+            ignoreExpiration: false
+        });
         var admin = await Admin.findOne({ _id: decoder._id, 'tokens.token': token });
         if (!admin)
             throw new Error('Admin does not exist');
@@ -13,7 +15,9 @@ var Auth = async (req, res, next) => {
         next();
     } catch (e) {
         console.log("Auth Error " + e.message);
-        res.status(401).send("Invalid Authorization");
+        if (e.message == 'jwt expired')
+            res.status(401).send({ staus: -1, error: "Please Re-Login" });
+        res.status(401).send({ status: -1, error:"Invalid Authorization"});
     }
 
 }

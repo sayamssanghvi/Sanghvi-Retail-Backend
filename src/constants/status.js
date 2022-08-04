@@ -1,0 +1,11 @@
+let status = {
+    RECEIVED:'RECEIVED',
+    AWAITING_RESPONSE: 'AWAITING RESPONSE',
+    IN_REPAIR: 'IN REPAIR',
+    IN_FACTORY:'IN FACTORY',
+    REPAIRED: 'REPAIRED',
+    DELIVERED: 'DELIVERED',
+    CANCELED: 'CANCELED',
+}
+
+module.exports = status;

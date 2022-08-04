@@ -24,12 +24,35 @@ var Schema = mongoose.Schema({
             type:String
         }
     }]
+}, {
+    timestamps:true
 });
 
+//#region Custom variables for fetching details where admin has entered data 
+Schema.virtual('adminSale', {
+    ref: 'Sale',
+    localField: 'phonenumber',
+    foreignField: 'admin'
+});
+
+Schema.virtual('repairSale', {
+    ref: 'RepairSale',
+    localField: 'phonenumber',
+    foreignField: 'admin'
+});
+
+Schema.virtual('adminCustomer', {
+    ref: 'Customer',
+    localField: 'phonenumber',
+    foreignField: 'admin'
+});
+//#endregion
 
 Schema.methods.generateAuthToken = async function () {
     let admin = this;
-    let token = await jwt.sign({ _id: admin._id.toString() }, "85391SMC");
+    let token = await jwt.sign({ _id: admin._id.toString() }, process.env.ADMIN_REG_KEY, {
+        expiresIn:"1d"
+    });
     admin.tokens=admin.tokens.concat({ token });
     await admin.save();
     console.log(admin);
@@ -46,13 +69,13 @@ Schema.statics.findByCredentials = async function (phonenumber, password) {
     return admin;
 };
 
-Schema.pre('save', async function (next){
+Schema.pre('save', async function (next) {
     let user = this;
     if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 8);
     }
     next();
-})
+});
 
 let Admin = new mongoose.model('Admin', Schema);
 

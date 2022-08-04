@@ -22,12 +22,17 @@ const Schema = mongoose.Schema({
   email: {
     type: String,
     trim: true,
+    unique:true,
     lowercase: true,
     validate(value) {
       if (!validator.isEmail(value))
         throw new Error("Please enter a valid email Id");
     }
   },
+  admin: {
+    type: String,
+    ref: 'Admin'
+  }
 }, {
   timestamps:true
 });
@@ -37,6 +42,12 @@ Schema.virtual('sales', {
   ref: 'Sale',
   localField: 'phonenumber',
   foreignField: 'user'
+});
+
+Schema.virtual('repairSales', {
+  ref: 'RepairSale',
+  localField: 'phonenumber',
+  foreignField: 'customer'
 });
 
 var Customer = new mongoose.model('Customer', Schema);
