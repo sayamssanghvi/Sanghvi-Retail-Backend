@@ -53,7 +53,6 @@ router.get("/customer/sale/:number", Auth, async (req, res) => {
   }
 });
 
-
 //Registering a customer with SanghviSales
 router.post("/customer/registration", Auth, async (req, res) => {
   try {
@@ -93,7 +92,7 @@ router.post("/customer/registration", Auth, async (req, res) => {
   }
 });
 
-//Regiter a new sale
+//Register a new sale
 router.post("/customer/new/sale", Auth, async (req, res) => {
   try {
     if (IsNullOrUndefined(req.body) || IsNullOrUndefined(req.body.phonenumber))

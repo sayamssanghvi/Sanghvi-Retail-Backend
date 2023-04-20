@@ -39,21 +39,21 @@ let discountSchema = new mongoose.Schema({
 let Schema = new mongoose.Schema({
     date: {
         type: dateSchema,
-        required:true
+        required: true
     },
     status: {
         type: String,
-        uppercase:true
+        uppercase: true
     },
     faults: [{
         type: String,
         required: true,
         uppercase: true
     }],
-    machineRepairCode:{
-        type:String,
+    machineRepairCode: {
+        type: String,
         unique: true,
-        uppercase:true
+        uppercase: true
     },
     repairs: [{
         part: RepairParts.Schema,
@@ -62,27 +62,27 @@ let Schema = new mongoose.Schema({
         }
     }],
     callBeforeRepair: {
-        type:Boolean  
+        type: Boolean
     },
     estimate: {
-        type:Number
+        type: Number
     },
     totalAmount: {
         type: Number
     },
-    discount:{
+    discount: {
         type: discountSchema
     },
-    customer:{
+    customer: {
         type: String,
-        ref:'Customer'
+        ref: 'Customer'
     },
     admin: {
         type: String,
-        ref:'Admin'
+        ref: 'Admin'
     }
 }, {
-    timestamps:true
+    timestamps: true
 });
 
 let RepairSale = mongoose.model('RepairSale', Schema);

@@ -1,5 +1,5 @@
-var MachineType = require('../../models/MachineType');
-var MachineTypeConstants = require('../../constants/dbvalues').MachineType;
+let MachineType = require('../../models/MachineType');
+let MachineTypeConstants = require('../../constants/dbvalues').MachineType;
 
 module.exports = (async function addMachineType() {
     try {

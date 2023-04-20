@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node src/app.js",
+    "start": "env-cmd -f ./config/dev.env node src/app.js",
     "debug": "env-cmd -f ./config/dev.env node --inspect-brk src/app.js",
     "dev": "env-cmd -f ./config/dev.env node src/app.js"
   },
@@ -16,6 +16,7 @@
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.21",
     "mongoose": "^5.11.7",
     "validator": "^13.5.2"
   }

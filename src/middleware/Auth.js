@@ -16,7 +16,7 @@ var Auth = async (req, res, next) => {
     } catch (e) {
         console.log("Auth Error " + e.message);
         if (e.message == 'jwt expired')
-            res.status(401).send({ staus: -1, error: "Please Re-Login" });
+            return res.status(401).send({ staus: -1, error: "Please Re-Login" });
         res.status(401).send({ status: -1, error:"Invalid Authorization"});
     }
 
