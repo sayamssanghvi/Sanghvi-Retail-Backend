@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
+  "engines":{
+    "node": "16.x"
+  },
   "scripts": {
     "start": "env-cmd -f ./config/stage.env node src/app.js",
     "debug": "env-cmd -f ./config/dev.env node --inspect-brk src/app.js",
