@@ -1,11 +1,11 @@
-var express = require('express');
+const express = require('express');
 require('./db/mongoose');
-var cors = require('cors');  
-var customerRouter = require('./router/customerRouter')
-var adminRouter = require('./router/adminRouter');
+const cors = require('cors');
+const customerRouter = require('./router/customerRouter')
+const adminRouter = require('./router/adminRouter');
 let repairRouter = require('./router/repairRouter');
-let { oneTimeExecutionScriptsForDB }= require('./scripts/oneTimeExecutionScriptsForDB');
-var app = express();
+let { oneTimeExecutionScriptsForDB } = require('./scripts/oneTimeExecutionScriptsForDB');
+const app = express();
 
 const port = process.env.PORT;
 
