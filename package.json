@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "env-cmd -f ./config/dev.env node src/app.js",
+    "start": "env-cmd -f ./config/stage.env node src/app.js",
     "debug": "env-cmd -f ./config/dev.env node --inspect-brk src/app.js",
     "dev": "env-cmd -f ./config/dev.env node src/app.js"
   },

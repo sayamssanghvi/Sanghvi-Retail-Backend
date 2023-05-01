@@ -20,3 +20,4 @@ oneTimeExecutionScriptsForDB.then(() => {
         console.log("Server is up and running:" + port);
     });
 })
+
