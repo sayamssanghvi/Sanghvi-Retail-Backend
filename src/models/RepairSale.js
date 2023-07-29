@@ -29,10 +29,12 @@ let dateSchema = new mongoose.Schema({
 //Discount Schema
 let discountSchema = new mongoose.Schema({
     amount: {
-        type: Number
+        type: Number,
+        default: 0
     },
     reason: {
-        type: String
+        type: String,
+        default: null
     }
 });
 

@@ -35,7 +35,7 @@ router.get("/repair/byPhoneNumber/:number", Auth, async (req, res) => {
           sort,
         }
       });
-    res.send({ status: 1, repairSales: repairSales.repairSales });
+    res.send({ status: 1, repairSales: repairSales.repairSales, customerName: repairSales.name });
   } catch (e) {
     console.log(e);
     res.status(500).send({ status: -99, error: e.message });
@@ -49,17 +49,30 @@ router.get("/repair/byMachineRepairCode/:repairCode", Auth, async (req, res) => 
     if (IsNullOrUndefined(req.params.repairCode))
       return res.status(400).send({ status: -1, error: Messages.INSUFFICIENT_DATA, data: req.body });
 
-    let RepairMachine = await RepairSale.findOne({ machineRepairCode: req.params.repairCode });
+    let RepairMachine = await RepairSale.aggregate([
+      {
+        $match: {
+          machineRepairCode: req.params.repairCode
+        }
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          localField: 'customer',
+          foreignField: 'phonenumber',
+          as: 'customer',
+        },
+      }
+    ]);
 
     if (IsNullOrUndefined(RepairMachine))
       return res.status(400).send({ status: -1, error: Messages.ENTER_VALID_REAPIR_CODE, data: req.body });
 
-    return res.send({ status: 1, data: RepairMachine });
+    return res.send({ status: 1, data: RepairMachine[0] });
   } catch (e) {
     console.log(e);
     res.status(500).send({ status: -99, error: e.message });
   }
-
 });
 
 //Gets all the repair Parts for Machine
@@ -203,7 +216,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
 
     req.body.status = req.body.status.toUpperCase();
 
-    if (repairMachine.status == Status.RECEIVED && req.body.status==Status.AWAITING_RESPONSE) {
+    if (repairMachine.status == Status.RECEIVED && req.body.status == Status.AWAITING_RESPONSE) {
       let repairBiz = new RepairBiz();
       let result = await repairBiz.submitEstimate(req);
       return res.send(result);
@@ -233,7 +246,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
           status: Status.IN_REPAIR,
           $set: {
             "date.inRepairStartDate": new Date().getTime(),
-            "repairs":[],
+            "repairs": [],
           }
         },
         { new: true }

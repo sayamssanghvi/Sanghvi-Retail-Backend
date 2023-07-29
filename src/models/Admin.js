@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const moment = require('moment/moment');
 
 var Schema = mongoose.Schema({
     phonenumber: {
@@ -17,15 +18,21 @@ var Schema = mongoose.Schema({
     },
     password: {
         type: String,
-        required:true,
+        required: true,
     },
     tokens: [{
         token: {
-            type:String
+            type: String
+        },
+        created_at: {
+            type: String
         }
-    }]
+    }],
+    role: {
+        type: String
+    },
 }, {
-    timestamps:true
+    timestamps: true
 });
 
 //#region Custom variables for fetching details where admin has entered data 
@@ -51,12 +58,12 @@ Schema.virtual('adminCustomer', {
 Schema.methods.generateAuthToken = async function () {
     let admin = this;
     let token = await jwt.sign({ _id: admin._id.toString() }, process.env.ADMIN_REG_KEY, {
-        expiresIn:"1d"
+        expiresIn: "1d"
     });
-    admin.tokens=admin.tokens.concat({ token });
+    admin.tokens = admin.tokens.concat({ token, created_at: moment().utcOffset("+05:30").toString() });
     await admin.save();
     console.log(admin);
-    return token;
+    return { token, role: admin.role };
 };
 
 Schema.statics.findByCredentials = async function (phonenumber, password) {
