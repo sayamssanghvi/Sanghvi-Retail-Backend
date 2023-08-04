@@ -15,7 +15,8 @@ let messages = {
     "ONCE_CANCELED_CANNOT_EDIT": "The RepairSale is CANCELED and hence cannot be edited further",
     "ENTER_PASSWORD_AND_PHNO": "Please enter both password and phonenumber",
     "MACHINE_DOES_NOT_EXIST": "Machine Name entered does not exist.",
-    "MACHINE_CANNOT_BE_REPAIRED":`Machine-{machineName} cannot be repaired`,
+    "MACHINE_CANNOT_BE_REPAIRED": `Machine-{machineName} cannot be repaired`,
+    "DISCOUNT": "Please enter valid discount",
 }
 
 module.exports = messages;

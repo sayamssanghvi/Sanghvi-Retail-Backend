@@ -118,7 +118,7 @@ router.get("/repair/parts/:machineRepairCode", Auth, async (req, res) => {
       _.set(value, 'quantity', 1);
     });
 
-    res.send({ status: 1, data: parts });
+    res.send({ status: 1, data: { parts, repairSale } });
   } catch (e) {
     console.log(e);
     res.status(500).send({ status: -99, error: e.message });
@@ -182,7 +182,7 @@ router.post("/repair/submitEstimate", Auth, async (req, res) => {
     let updatedRepairMachine = await RepairSale.findOneAndUpdate(
       { machineRepairCode: req.body.machineRepairCode },
       {
-        status: Status.AWAITING_RESPONSE,
+        status: Status.ESTIMATE_SUBMITTED,
         estimate: req.body.estimate,
         $set: {
           "date.estimateGivenDate": new Date().getTime()
@@ -201,8 +201,8 @@ router.post("/repair/submitEstimate", Auth, async (req, res) => {
 
 //Change Status from
 //Received -> In_Repair
-//Awaiting_response -> In_Repair
-//Awaiting_response -> Canceled
+//ESTIMATE_SUBMITTED -> In_Repair
+//ESTIMATE_SUBMITTED -> Canceled
 //In_Repair -> In_Factory
 //Repaired -> Delivered 
 router.post('/repair/changeStatus', Auth, async (req, res) => {
@@ -216,12 +216,26 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
 
     req.body.status = req.body.status.toUpperCase();
 
-    if (repairMachine.status == Status.RECEIVED && req.body.status == Status.AWAITING_RESPONSE) {
-      let repairBiz = new RepairBiz();
-      let result = await repairBiz.submitEstimate(req);
-      return res.send(result);
-    }
+    // Received -> Esitmate Submitted
+    if (repairMachine.status == Status.RECEIVED && req.body.status == Status.ESTIMATE_SUBMITTED) {
+      // let repairBiz = new RepairBiz();
+      // let result = await repairBiz.submitEstimate(req);
+      // return res.send(result);
 
+      let updatedRepairMachine = await RepairSale.findOneAndUpdate(
+        { machineRepairCode: req.body.machineRepairCode },
+        {
+          status: Status.ESTIMATE_SUBMITTED,
+          $set: {
+            "date.estimateGivenDate": new Date().getTime()
+          }
+        },
+        { new: true }
+      );
+
+      return res.send({ status: 1, data: updatedRepairMachine });
+    }
+    // Received -> In Repair
     if (repairMachine.status == Status.RECEIVED && req.body.status == Status.IN_REPAIR) {
       if (repairMachine.callBeforeRepair)
         return res.status(400).send({ status: -1, error: Messages.ESTIMATE_NOT_GIVEN, data: req.body });
@@ -239,7 +253,24 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
 
       return res.send({ status: 1, data: updatedRepairMachine });
 
-    } else if (repairMachine.status == Status.AWAITING_RESPONSE && req.body.status == Status.IN_REPAIR) {
+    }
+    // Estimate Submitted -> Estimate Approved
+    else if (repairMachine.status == Status.ESTIMATE_SUBMITTED && req.body.status == Status.ESTIMATE_APPROVED) {
+      let updatedRepairMachine = await RepairSale.findOneAndUpdate(
+        { machineRepairCode: req.body.machineRepairCode },
+        {
+          status: Status.ESTIMATE_APPROVED,
+          $set: {
+            "date.estimateApprovedDate": new Date().getTime()
+          }
+        },
+        { new: true }
+      );
+
+      return res.send({ status: 1, data: updatedRepairMachine });
+    }
+    // Estimate Approved -> In Repair
+    else if (repairMachine.status == Status.ESTIMATE_APPROVED && req.body.status == Status.IN_REPAIR) {
       let updatedRepairMachine = await RepairSale.findOneAndUpdate(
         { machineRepairCode: req.body.machineRepairCode },
         {
@@ -254,7 +285,9 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
 
       return res.send({ status: 1, data: updatedRepairMachine });
 
-    } else if (repairMachine.status == Status.AWAITING_RESPONSE && req.body.status == Status.CANCELED) {
+    }
+    //Estimate Submitted -> Cancelled
+    else if (repairMachine.status == Status.ESTIMATE_SUBMITTED && req.body.status == Status.CANCELED) {
       let updatedRepairMachine = await RepairSale.findOneAndUpdate(
         { machineRepairCode: req.body.machineRepairCode },
         {
@@ -267,7 +300,9 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
       );
 
       return res.send({ status: 1, data: updatedRepairMachine });
-    } else if (repairMachine.status == Status.IN_REPAIR && req.body.status == Status.IN_FACTORY) {
+    }
+    // In Repair -> In Factory
+    else if (repairMachine.status == Status.IN_REPAIR && req.body.status == Status.IN_FACTORY) {
       let updatedRepairMachine = await RepairSale.findOneAndUpdate(
         { machineRepairCode: req.body.machineRepairCode },
         {
@@ -281,6 +316,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
 
       return res.send({ status: 1, data: updatedRepairMachine });
     }
+    // Repaired -> Delivered
     else if (repairMachine.status == Status.REPAIRED && req.body.status == Status.DELIVERED) {
       let updatedRepairMachine = await RepairSale.findOneAndUpdate(
         { machineRepairCode: req.body.machineRepairCode },
@@ -316,7 +352,7 @@ router.post('/repair/submitParts', Auth, async (req, res) => {
     if (repairMachine.status == Status.REPAIRED || repairMachine.status == Status.DELIVERED)
       return res.status(400).send({ status: -1, error: Messages.ALREADY_REPAIRED });
 
-    if (repairMachine.status != Status.IN_REPAIR && repairMachine.status != Status.IN_FACTORY)
+    if (repairMachine.status != Status.IN_REPAIR && repairMachine.status != Status.IN_FACTORY && !(repairMachine.callBeforeRepair && repairMachine.status == Status.RECEIVED))
       return res.status(400).send({ status: -1, error: Messages.CANNOT_ADD_REPAIR_PARTS })
 
     let partsAndAmount = await addRepairPartsAndCalculateTotal(req.body);
@@ -327,20 +363,32 @@ router.post('/repair/submitParts', Auth, async (req, res) => {
     if (!IsNullOrUndefined(repairMachine.discount) && !IsNullOrUndefined(repairMachine.discount.amount))
       partsAndAmount.totalAmount -= repairMachine.discount.amount;
 
+    let payload = {
+      $set: {
+        "date.repairedDate": new Date().getTime()
+      },
+      repairs: partsAndAmount.repPartsAll,
+      totalAmount: partsAndAmount.totalAmount,
+      status: Status.REPAIRED,
+    };
+
+    if (repairMachine.callBeforeRepair && repairMachine.status == Status.RECEIVED) {
+      payload = {
+        $set: {
+          "date.estimateGivenDate": new Date().getTime()
+        },
+        status: Status.ESTIMATE_SUBMITTED,
+        estimate: partsAndAmount.totalAmount
+      };
+    }
 
     let updatedRepairMachine = await RepairSale.findOneAndUpdate(
       { machineRepairCode: req.body.machineRepairCode },
       {
-        $set: {
-          "date.repairedDate": new Date().getTime()
-        },
-        repairs: partsAndAmount.repPartsAll,
-        totalAmount: partsAndAmount.totalAmount,
-        status: Status.REPAIRED,
+        ...payload
       },
       { new: true }
     );
-
 
     res.send({ status: 1, data: updatedRepairMachine });
 
@@ -390,16 +438,17 @@ router.put('/repair/editSale', Auth, async (req, res) => {
         return res.status(400).send({ status: -1, error: Messages.INVALID_DATA_PASSED, data: req.body });
 
       //If new discount is passed then calculatte totalAmount using that.
-      if (!IsNullOrUndefined(req.body.discount.amount))
-        partsAndAmount.totalAmount -= req.body.discount.amount;
+      // if (!IsNullOrUndefined(req.body.discount.amount))
+      // partsAndAmount.totalAmount -= req.body.discount.amount;
 
       //If existing discount is there and new discount is not passed use the existing one to recalculate the totalAmount
-      if (!IsNullOrUndefined(repairMachine.discount) && !IsNullOrUndefined(repairMachine.discount.amount) && IsNullOrUndefined(req.body.discount.amount))
-        partsAndAmount.totalAmount -= repairMachine.discount.amount;
-    } else if (!IsNullOrUndefined(req.body.discount)) {
-      if (!IsNullOrUndefined(repairMachine.totalAmount))
-        repairMachine.totalAmount -= req.body.discount.amount;
+      // if (!IsNullOrUndefined(repairMachine.discount) && !IsNullOrUndefined(repairMachine.discount.amount) && IsNullOrUndefined(req.body.discount.amount))
+      //   partsAndAmount.totalAmount -= repairMachine.discount.amount;
     }
+    // else if (!IsNullOrUndefined(req.body.discount)) {
+    //   if (!IsNullOrUndefined(repairMachine.totalAmount))
+    //     repairMachine.totalAmount -= req.body.discount.amount;
+    // }
 
     let inputs = req.body;
 
@@ -426,6 +475,26 @@ router.put('/repair/editSale', Auth, async (req, res) => {
     res.status(500).send({ status: -99, error: e.message });
   }
 });
+
+router.post('/repair/add-discount', Auth, async (req, res) => {
+  try {
+    if (_.isEmpty(req.body.discount)) {
+      res.send(400).send({ status: -1, error: Messages.DISCOUNT, data: req.body });
+    }
+
+    let updatedRepairMachine = await RepairSale.findOneAndUpdate(
+      { machineRepairCode: req.body.machineRepairCode },
+      {
+        discount: req.body.discount
+      },
+      { new: true }
+    );
+
+    res.send({ status: 1, data: updatedRepairMachine });
+  } catch (e) {
+    res.status(500).send({ status: -99, error: e.message });
+  }
+})
 
 // Gets all reapired parts and adds base charge if needed and Calculates totalAmount of repair 
 async function addRepairPartsAndCalculateTotal(body) {

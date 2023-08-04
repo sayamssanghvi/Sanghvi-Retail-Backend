@@ -5,10 +5,10 @@ const Messages = require('../constants/messages');
 const IsNullOrUndefined = require('../utilities/nullCheck');
 const _ = require('lodash');
 
-class RepairBiz{
-    
+class RepairBiz {
+
     constructor() {
-        
+
     }
 
     submitEstimate(req) {
@@ -27,7 +27,7 @@ class RepairBiz{
                 let updatedRepairMachine = await RepairSale.findOneAndUpdate(
                     { machineRepairCode: req.body.machineRepairCode },
                     {
-                        status: Status.AWAITING_RESPONSE,
+                        status: Status.ESTIMATE_SUBMITTED,
                         estimate: req.body.estimate,
                         $set: {
                             "date.estimateGivenDate": new Date().getTime()

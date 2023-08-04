@@ -9,6 +9,9 @@ let dateSchema = new mongoose.Schema({
     estimateGivenDate: {
         type: Date,
     },
+    estimateApprovedDate: {
+        type: Date
+    },
     inRepairStartDate: {
         type: Date,
     },
