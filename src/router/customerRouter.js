@@ -80,7 +80,7 @@ router.post("/customer/registration", Auth, async (req, res) => {
         name: req.body.name,
         phonenumber: req.body.phonenumber,
         admin: req.admin.phonenumber,
-        email:req.body.name+'@noemail.com'
+        email: req.body.name.replaceAll(' ', '_') +'@noemail.com'
       });
     }
     await cust.save();

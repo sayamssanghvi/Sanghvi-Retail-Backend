@@ -17,6 +17,7 @@ let messages = {
     "MACHINE_DOES_NOT_EXIST": "Machine Name entered does not exist.",
     "MACHINE_CANNOT_BE_REPAIRED": `Machine-{machineName} cannot be repaired`,
     "DISCOUNT": "Please enter valid discount",
+    "STATUS_REQUIRED":"Query Param 'status' is required with valid values"
 }
 
 module.exports = messages;

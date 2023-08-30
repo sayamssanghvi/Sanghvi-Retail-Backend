@@ -1,4 +1,4 @@
-//@ts-check
+// @ts-ignore
 const express = require('express');
 const Auth = require('../middleware/Auth');
 
@@ -13,6 +13,7 @@ const { RepairParts } = require('../models/RepairParts');
 const MachineType = require('../models/MachineType');
 const _ = require('lodash');
 const RepairBiz = require('../biz/repair.biz');
+const moment = require('moment');
 
 const router = express.Router();
 
@@ -152,7 +153,7 @@ router.post("/repair/generateCode", Auth, async (req, res) => {
 
     await repairSale.save();
 
-    let code = await Stat.findOneAndUpdate(
+    await Stat.findOneAndUpdate(
       { statName: DBValues.Stat.REPAIR_SALE_COUNT },
       { count: previousCode.count },
       { new: true }
@@ -227,7 +228,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.ESTIMATE_SUBMITTED,
           $set: {
-            "date.estimateGivenDate": new Date().getTime()
+            "date.estimateGivenDate": moment().utcOffset("+05:30")
           }
         },
         { new: true }
@@ -245,7 +246,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.IN_REPAIR,
           $set: {
-            "date.inRepairStartDate": new Date().getTime()
+            "date.inRepairStartDate": moment().utcOffset("+05:30")
           }
         },
         { new: true }
@@ -261,7 +262,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.ESTIMATE_APPROVED,
           $set: {
-            "date.estimateApprovedDate": new Date().getTime()
+            "date.estimateApprovedDate": moment().utcOffset("+05:30")
           }
         },
         { new: true }
@@ -276,7 +277,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.IN_REPAIR,
           $set: {
-            "date.inRepairStartDate": new Date().getTime(),
+            "date.inRepairStartDate": moment().utcOffset("+05:30"),
             "repairs": [],
           }
         },
@@ -293,7 +294,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.CANCELED,
           $set: {
-            "date.canceledDate": new Date().getTime()
+            "date.canceledDate": moment().utcOffset("+05:30")
           }
         },
         { new: true }
@@ -308,7 +309,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.IN_FACTORY,
           $set: {
-            "date.sentToFactoryDate": new Date().getTime()
+            "date.sentToFactoryDate": moment().utcOffset("+05:30")
           }
         },
         { new: true }
@@ -323,7 +324,7 @@ router.post('/repair/changeStatus', Auth, async (req, res) => {
         {
           status: Status.DELIVERED,
           $set: {
-            "date.deliveryDate": new Date().getTime()
+            "date.deliveryDate": moment().utcOffset("+05:30")
           }
         },
         { new: true }
@@ -365,7 +366,7 @@ router.post('/repair/submitParts', Auth, async (req, res) => {
 
     let payload = {
       $set: {
-        "date.repairedDate": new Date().getTime()
+        "date.repairedDate": moment().utcOffset("+05:30")
       },
       repairs: partsAndAmount.repPartsAll,
       totalAmount: partsAndAmount.totalAmount,
@@ -375,7 +376,7 @@ router.post('/repair/submitParts', Auth, async (req, res) => {
     if (repairMachine.callBeforeRepair && repairMachine.status == Status.RECEIVED) {
       payload = {
         $set: {
-          "date.estimateGivenDate": new Date().getTime()
+          "date.estimateGivenDate": moment().utcOffset("+05:30")
         },
         status: Status.ESTIMATE_SUBMITTED,
         estimate: partsAndAmount.totalAmount
@@ -494,6 +495,38 @@ router.post('/repair/add-discount', Auth, async (req, res) => {
   } catch (e) {
     res.status(500).send({ status: -99, error: e.message });
   }
+});
+
+router.get('/repair', Auth, async (req, res) => {
+  try {
+    let status = req.query.status;
+    let isRepairedToday = req.query.isRepairedToday;
+    let filter = {};
+
+    if (_.isEmpty(status) || ![Status.DELIVERED.toLowerCase(), Status.RECEIVED.toLowerCase(), Status.REPAIRED.toLowerCase()].includes(status)) {
+      return res.status(400).send({ status: -1, error: Messages.STATUS_REQUIRED });
+    }
+
+    if (!_.isEmpty(isRepairedToday) && Status.REPAIRED.toLowerCase() == status) {
+      filter["date.repairedDate"] = {
+        $gte: moment().startOf("date").toISOString(true),
+        $lt: moment().endOf("date").toISOString(true)
+      }
+    }
+
+    if (status == Status.RECEIVED.toLowerCase()) {
+      status = [Status.IN_REPAIR, Status.ESTIMATE_APPROVED, Status.ESTIMATE_SUBMITTED, Status.IN_FACTORY, Status.RECEIVED];
+      _.set(filter, 'status', status);
+    } else {
+      _.set(filter, "status", status.toUpperCase());
+    }
+
+    let machines = await RepairSale.find(filter);
+
+    res.send({ status: 1, data: machines });
+  } catch (error) {
+    res.status(500).send({ status: -99, error: error.message });
+  }
 })
 
 // Gets all reapired parts and adds base charge if needed and Calculates totalAmount of repair 
@@ -506,9 +539,8 @@ async function addRepairPartsAndCalculateTotal(body) {
       let baseChargeCheck = false;
 
       for (let i = 0; i < repairParts.length; i++) {
-        if (repairParts[i].name.length > 2 && repairParts[i].quantity > 0) {
+        if (repairParts[i]._id.length > 2 && repairParts[i].quantity > 0) {
           let part = await RepairParts.findOne({
-            name: repairParts[i].name.toUpperCase(),
             _id: repairParts[i]._id
           });
           if (!IsNullOrUndefined(part)) {
