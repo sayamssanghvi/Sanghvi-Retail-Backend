@@ -39,8 +39,8 @@ router.post('/admin/login', async (req, res) => {
         if (req.body.password == null || req.body.phonenumber == null)
             return res.status(404).send({ status: -1, error: Messages.ENTER_PASSWORD_AND_PHNO });
         let admin = await Admin.findByCredentials(req.body.phonenumber, req.body.password.toString());
-        let { token, role } = await admin.generateAuthToken();
-        res.send({ status: 1, token, role });
+        let { token, role, language } = await admin.generateAuthToken();
+        res.send({ status: 1, token, role, language });
     } catch (e) {
         console.log(e);
         if (e.message == "This phonenumber does not exists")

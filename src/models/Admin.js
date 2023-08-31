@@ -31,6 +31,9 @@ var Schema = mongoose.Schema({
     role: {
         type: String
     },
+    language: {
+        type: String
+    }
 }, {
     timestamps: true
 });
@@ -63,7 +66,7 @@ Schema.methods.generateAuthToken = async function () {
     admin.tokens = admin.tokens.concat({ token, created_at: moment().utcOffset("+05:30").toString() });
     await admin.save();
     console.log(admin);
-    return { token, role: admin.role };
+    return { token, role: admin.role, language: admin.language };
 };
 
 Schema.statics.findByCredentials = async function (phonenumber, password) {
